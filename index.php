@@ -4,308 +4,229 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>My Planner PRO</title>
+    <title>My Planner PRO - Clean Design</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/index.global.min.js"></script>
+    
     <style>
-        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-        .card { border: none; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        #calendar { max-height: 650px; background: white; padding: 15px; border-radius: 12px; }
-        .fc-event { cursor: pointer; } 
+        :root { --main-bg: #f8f9fa; --card-shadow: 0 10px 30px rgba(0,0,0,0.05); }
+        body { background-color: var(--main-bg); font-family: 'Sarabun', sans-serif; }
         
-        /* สไตล์สำหรับการพิมพ์ (Print) */
-        @media print {
-            body { background-color: white; }
-            .no-print { display: none !important; } /* ซ่อนแถบด้านซ้ายและเมนูตอนสั่งพิมพ์ */
-            .col-lg-8 { width: 100% !important; } /* ขยายปฏิทินให้เต็มกระดาษ */
-            .card { box-shadow: none !important; border: 1px solid #ccc !important; }
+        /* Navbar ทันสมัย */
+        .navbar { background: white !important; border-bottom: 1px solid #eee; }
+        .navbar-brand { color: #2d3436 !important; font-weight: 600; }
+
+        /* การ์ดและปฏิทิน */
+        .card { border: none; border-radius: 20px; box-shadow: var(--card-shadow); }
+        #calendar { background: white; padding: 20px; border-radius: 20px; }
+
+        /* ปรับปรุงกล่องข้อความรายละเอียด */
+        .detail-box { 
+            background: #fff; 
+            padding: 20px; 
+            border-radius: 15px; 
+            border: 1px solid #f1f1f1; 
+            line-height: 1.8; 
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-size: 1.1rem;
+            color: #2d3436;
         }
+
+        /* รูปภาพขนาดใหญ่พอดีจอ */
+        .img-preview-box { 
+            border-radius: 15px; 
+            overflow: hidden; 
+            margin-bottom: 20px; 
+            background: #000;
+        }
+        .img-preview-box img { 
+            width: 100%; 
+            max-height: 60vh; 
+            object-fit: contain; 
+            cursor: zoom-in;
+        }
+
+        /* ปุ่มกระดิ่ง */
+        .btn-notif { position: relative; background: #f1f3f5; border-radius: 12px; padding: 8px 12px; cursor: pointer; }
+        .badge-dot { position: absolute; top: 5px; right: 5px; width: 10px; height: 10px; background: #ff7675; border-radius: 50%; display: none; }
+
+        /* สีหมวดหมู่ */
+        .color-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+        
+        @media (max-width: 768px) { .display-none-mobile { display: none; } }
     </style>
 </head>
 <body>
 
-    <nav class="navbar navbar-dark bg-primary mb-4 shadow-sm no-print">
-        <div class="container d-flex justify-content-between align-items-center">
-            <span class="navbar-brand mb-0 h1 fw-bold">📝 My Planner PRO</span>
-            <div class="d-flex gap-2">
-                <input type="text" id="searchInput" class="form-control" placeholder="🔍 ค้นหางาน/โน้ต...">
-                <button class="btn btn-warning text-dark fw-bold" onclick="searchEvents()" style="white-space: nowrap;">ค้นหา</button>
-                <button class="btn btn-light fw-bold" onclick="window.print()" style="white-space: nowrap;">🖨️ พิมพ์</button>
+    <nav class="navbar navbar-expand-lg mb-4 sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="#">📅 My Planner <span class="text-primary">PRO</span></a>
+            <div class="d-flex align-items-center gap-3">
+                <div class="btn-notif" onclick="showTodayTasks()">
+                    🔔 <span class="badge-dot" id="notifBadge"></span>
+                </div>
+                <div class="input-group d-none d-md-flex">
+                    <input type="text" id="searchInput" class="form-control border-end-0" style="border-radius: 10px 0 0 10px;" placeholder="ค้นหางานของคุณ...">
+                    <button class="btn btn-primary" style="border-radius: 0 10px 10px 0;" onclick="searchEvents()">ค้นหา</button>
+                </div>
             </div>
         </div>
     </nav>
 
-    <div class="container">
+    <div class="container pb-5">
         <div class="row">
-            <div class="col-lg-4 mb-4 no-print">
-                <div class="card p-4">
-                    <h4 class="mb-4 fw-bold text-primary">เพิ่มบันทึกใหม่</h4>
-                    <form id="noteForm" action="save_data.php" method="POST" enctype="multipart/form-data">
+            <div class="col-lg-4">
+                <div class="card p-4 mb-4">
+                    <h5 class="fw-bold mb-4 text-dark">✨ บันทึกใหม่</h5>
+                    <form action="save_data.php" method="POST" enctype="multipart/form-data">
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">หัวข้อ</label>
-                            <input type="text" class="form-control" name="title" required>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">รายละเอียด</label>
-                            <textarea class="form-control" name="content" rows="4"></textarea>
+                            <input type="text" class="form-control bg-light border-0 py-2" name="title" placeholder="หัวข้อเรื่อง" required>
                         </div>
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">วันที่แสดงในปฏิทิน</label>
-                            <input type="date" class="form-control" name="event_date" required>
+                            <textarea class="form-control bg-light border-0" name="content" rows="3" placeholder="รายละเอียด..."></textarea>
                         </div>
-                        <div class="mb-4">
-                            <label class="form-label fw-semibold text-danger">แนบไฟล์ (เลือกได้หลายไฟล์)</label>
-                            <input class="form-control" type="file" name="attachments[]" multiple>
+                        <div class="mb-3">
+                            <div class="row g-2">
+                                <div class="col-7"><input type="date" class="form-control bg-light border-0" name="event_date" required></div>
+                                <div class="col-5"><input type="time" class="form-control bg-light border-0" name="event_time" value="09:00"></div>
+                            </div>
                         </div>
-                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2">💾 บันทึกข้อมูล</button>
+                        <div class="mb-3">
+                            <label class="small text-muted mb-1">ความสำคัญ:</label>
+                            <select class="form-select bg-light border-0" name="event_color">
+                                <option value="#0d6efd">🔵 ปกติ (น้ำเงิน)</option>
+                                <option value="#ff7675">🔴 ด่วนมาก (แดง)</option>
+                                <option value="#55efc4">🟢 ส่วนตัว (เขียว)</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <input type="file" class="form-control bg-light border-0" name="attachments[]" multiple>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold py-2 shadow-sm">บันทึกกิจกรรม</button>
                     </form>
                 </div>
             </div>
 
             <div class="col-lg-8">
-                <div class="card p-0">
-                    <div id="calendar"></div>
-                </div>
+                <div id="calendar" class="shadow-sm"></div>
             </div>
-        </div> 
-    </div> 
-
-    <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-primary text-white no-print">
-            <h5 class="modal-title fw-bold" id="eventModalTitle">รายละเอียด</h5>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <p class="mb-2"><strong>รายละเอียด:</strong> <br><span id="eventModalContent" class="text-muted"></span></p>
-            <div id="eventModalAttachment" class="mt-3 text-center"></div>
-          </div>
-          <div class="modal-footer no-print">
-            <button type="button" class="btn btn-danger me-auto" id="btnDeleteEvent">🗑️ ลบ</button>
-            <button type="button" class="btn btn-warning" id="btnOpenEdit">✏️ แก้ไข</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ปิด</button>
-          </div>
         </div>
-      </div>
     </div>
 
-    <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
-      <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content">
-          <div class="modal-header bg-warning text-dark">
-            <h5 class="modal-title fw-bold">✏️ แก้ไขข้อมูล</h5>
-            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-          </div>
-          <div class="modal-body">
-            <form id="editForm">
-                <input type="hidden" id="editEventId">
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">หัวข้อ</label>
-                    <input type="text" class="form-control" id="editTitle" required>
+    <div class="modal fade" id="eventModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0" style="border-radius: 25px;">
+                <div class="modal-header border-0 px-4 pt-4">
+                    <h4 class="modal-title fw-bold" id="modalTitle"></h4>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">รายละเอียด</label>
-                    <textarea class="form-control" id="editContent" rows="3"></textarea>
+                <div class="modal-body p-4">
+                    <div id="modalFiles"></div>
+                    <div class="detail-box shadow-sm" id="modalContent"></div>
                 </div>
-                <div class="mb-3">
-                    <label class="form-label fw-semibold">วันที่</label>
-                    <input type="date" class="form-control" id="editDate" required>
+                <div class="modal-footer border-0 px-4 pb-4">
+                    <button class="btn btn-light text-danger fw-bold me-auto" id="btnDelete">ลบงานนี้</button>
+                    <button class="btn btn-primary px-4 fw-bold" data-bs-dismiss="modal">เสร็จสิ้น</button>
                 </div>
-                
-                <hr>
-                <div class="mb-2 fw-semibold">ไฟล์แนบเดิม:</div>
-                <div id="editExistingAttachments" class="mb-3"></div> <div class="mb-2 fw-semibold text-success">➕ เพิ่มไฟล์ใหม่:</div>
-                <input class="form-control" type="file" id="editNewAttachments" multiple>
-            </form>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-success" id="btnSaveEdit">💾 บันทึกการแก้ไข</button>
-            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">ยกเลิก</button>
-          </div>
+            </div>
         </div>
-      </div>
+    </div>
+
+    <div class="toast-container position-fixed bottom-0 end-0 p-3">
+        <div id="todayToast" class="toast card border-0" role="alert" data-bs-autohide="false">
+            <div class="toast-header bg-white border-0 py-3">
+                <strong class="me-auto text-primary">🚀 กิจกรรมวันนี้</strong>
+                <button type="button" class="btn-close" data-bs-dismiss="toast"></button>
+            </div>
+            <div class="toast-body pt-0 pb-3" id="toastBody"></div>
+        </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    var calendar; // ประกาศ calendar ให้เป็นตัวแปรระดับ Global เพื่อให้ปุ่มค้นหาเรียกใช้ได้
+    let calendar, allEvents = [], currentId = null;
 
-    function searchEvents() {
-        // ใช้ .trim() เพื่อตัดช่องว่างเผื่อผู้ใช้เผลอกด Spacebar
-        var keyword = document.getElementById('searchInput').value.trim();
-
-        // --- ฟีเจอร์ที่เพิ่ม: ถ้าช่องค้นหาว่างเปล่า ให้กลับมาแสดงผลทั้งหมด ---
-        if (keyword === '') {
-            calendar.setOption('events', 'get_events.php'); // ดึงข้อมูลทั้งหมดจากฐานข้อมูล
-            calendar.gotoDate(new Date()); // กระโดดกลับมาที่เดือนปัจจุบัน
-            return; // จบการทำงานของฟังก์ชันค้นหา
-        }
-        // -------------------------------------------------------
-
-        var url = 'get_events.php?search=' + encodeURIComponent(keyword);
-
-        // ดึงข้อมูลมาดูก่อนว่าผลลัพธ์แรกอยู่ที่วันที่เท่าไหร่
-        fetch(url)
-        .then(res => res.json())
-        .then(data => {
-            if (data.length > 0) {
-                // ถ้าเจอข้อมูล ให้สั่งปฏิทินกระโดดไปที่วันที่ของกิจกรรมแรกที่พบ
-                calendar.gotoDate(data[0].start);
-                
-                // อัปเดตเหตุการณ์บนปฏิทินให้แสดงเฉพาะที่ค้นหา
-                calendar.setOption('events', url);
-            } else {
-                // ถ้าไม่เจอข้อมูลเลย
-                alert('🔍 ไม่พบกิจกรรมที่ตรงกับคำค้นหาของคุณ');
-                
-                // เคลียร์ช่องค้นหาและกลับมาโชว์ทั้งหมดอัตโนมัติ
-                document.getElementById('searchInput').value = '';
-                calendar.setOption('events', 'get_events.php');
-                calendar.gotoDate(new Date());
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching search results:', error);
-        });
-    }
-
-    // ฟังก์ชันสำหรับลบไฟล์ทีละรูปในหน้าแก้ไข
-    function deleteSingleFile(fileId, elementId) {
-        if(confirm('ต้องการลบไฟล์นี้ออกจากระบบทันทีใช่หรือไม่?')) {
-            var fd = new FormData();
-            fd.append('file_id', fileId);
-            fetch('delete_attachment.php', { method: 'POST', body: fd })
-            .then(res => res.text())
-            .then(data => {
-                if(data.trim() === 'success') {
-                    document.getElementById(elementId).remove(); // เอาแถบรูปออกจากจอ
-                    calendar.refetchEvents(); // อัปเดตปฏิทิน
-                } else { alert(data); }
+    function showEventDetail(id) {
+        const ev = allEvents.find(e => e.id == id);
+        if(!ev) return;
+        currentId = id;
+        document.getElementById('modalTitle').innerText = ev.title;
+        document.getElementById('modalContent').innerText = ev.content || 'ไม่มีรายละเอียดระบุไว้';
+        
+        const filesDiv = document.getElementById('modalFiles');
+        filesDiv.innerHTML = '';
+        if(ev.attachments) {
+            ev.attachments.forEach(f => {
+                const isImg = ['jpg','jpeg','png','gif','webp'].includes(f.type.toLowerCase());
+                if(isImg) {
+                    filesDiv.innerHTML += `<div class="img-preview-box shadow-sm"><img src="${f.url}" onclick="window.open('${f.url}')"></div>`;
+                } else {
+                    filesDiv.innerHTML += `<a href="${f.url}" target="_blank" class="btn btn-outline-secondary w-100 mb-3 py-2 fw-bold">📎 ดาวน์โหลดเอกสาร</a>`;
+                }
             });
         }
+        new bootstrap.Modal(document.getElementById('eventModal')).show();
+    }
+
+    function showTodayTasks() {
+        const todayStr = new Date().toLocaleDateString('en-CA'); // YYYY-MM-DD
+        const tasks = allEvents.filter(e => e.start.startsWith(todayStr));
+        if(tasks.length > 0) {
+            let html = `<div class="list-group list-group-flush">`;
+            tasks.forEach(t => {
+                const time = t.start.includes(' ') ? t.start.split(' ')[1].substring(0,5) : '--:--';
+                html += `<a href="#" onclick="showEventDetail(${t.id})" class="list-group-item list-group-item-action border-0 px-0">
+                    <span class="fw-bold text-primary">${time}</span> - ${t.title}
+                </a>`;
+            });
+            html += `</div>`;
+            document.getElementById('toastBody').innerHTML = html;
+            new bootstrap.Toast(document.getElementById('todayToast')).show();
+        } else {
+            alert('วันนี้คุณไม่มีงานที่บันทึกไว้ครับ พักผ่อนให้เต็มที่!');
+        }
+    }
+
+    function searchEvents() {
+        const kw = document.getElementById('searchInput').value;
+        const url = 'get_events.php?search=' + encodeURIComponent(kw);
+        fetch(url).then(res => res.json()).then(data => {
+            if(data.length > 0) { calendar.setOption('events', url); calendar.gotoDate(data[0].start); }
+            else { alert('ไม่พบรายการที่ค้นหา'); }
+        });
     }
 
     document.addEventListener('DOMContentLoaded', function() {
-        var calendarEl = document.getElementById('calendar');
-        var currentEventId = null; 
-        var currentEventDate = null;
-        var currentAttachments = []; // เก็บไฟล์ของ event ที่ถูกคลิก
-
-        calendar = new FullCalendar.Calendar(calendarEl, {
+        calendar = new FullCalendar.Calendar(document.getElementById('calendar'), {
             initialView: 'dayGridMonth',
             locale: 'th',
-            headerToolbar: {
-                left: 'prev,next today',
-                center: 'title',
-                right: 'dayGridMonth,timeGridWeek,timeGridDay'
-            },
+            displayEventTime: true,
+            eventTimeFormat: { hour: '2-digit', minute: '2-digit', hour12: false },
             events: 'get_events.php',
-            eventClick: function(info) {
-                currentEventId = info.event.id; 
-                currentEventDate = info.event.startStr.split('T')[0];
-                currentAttachments = info.event.extendedProps.attachments || [];
-                
-                document.getElementById('eventModalTitle').innerText = info.event.title;
-                document.getElementById('eventModalContent').innerText = info.event.extendedProps.content || 'ไม่มีรายละเอียด';
-                
-                var attachmentDiv = document.getElementById('eventModalAttachment');
-                attachmentDiv.innerHTML = ''; 
-                
-                if (currentAttachments.length > 0) {
-                    var html = '<div class="row g-2">'; 
-                    currentAttachments.forEach(function(file) {
-                        if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(file.type.toLowerCase())) {
-                            html += '<div class="col-6"><img src="' + file.url + '" class="img-fluid rounded shadow-sm w-100" style="object-fit: cover; height: 150px;"></div>';
-                        } else {
-                            html += '<div class="col-12"><a href="' + file.url + '" target="_blank" class="btn btn-outline-primary w-100 mb-1">📎 เปิดไฟล์แนบ</a></div>';
-                        }
-                    });
-                    html += '</div>';
-                    attachmentDiv.innerHTML = html;
-                }
-
-                new bootstrap.Modal(document.getElementById('eventModal')).show();
-            }
+            eventClick: (info) => showEventDetail(info.event.id)
         });
-
         calendar.render();
 
-        // 1. กดลบทั้งกิจกรรม
-        document.getElementById('btnDeleteEvent').addEventListener('click', function() {
-            if (confirm('ลบข้อมูลและไฟล์ทั้งหมด?')) {
-                var formData = new FormData();
-                formData.append('id', currentEventId);
-                fetch('delete_event.php', { method: 'POST', body: formData })
-                .then(response => response.text())
-                .then(data => {
-                    if (data.trim() === "success") {
-                        calendar.getEventById(currentEventId).remove();
-                        bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
-                    }
-                });
+        fetch('get_events.php').then(res => res.json()).then(events => {
+            allEvents = events;
+            const todayStr = new Date().toLocaleDateString('en-CA');
+            const todayCount = events.filter(e => e.start.startsWith(todayStr)).length;
+            if(todayCount > 0) {
+                document.getElementById('notifBadge').style.display = 'block';
+                showTodayTasks();
             }
         });
 
-        // 2. กดปุ่มแก้ไข -> นำข้อมูลและไฟล์ลงฟอร์ม
-        document.getElementById('btnOpenEdit').addEventListener('click', function() {
-            bootstrap.Modal.getInstance(document.getElementById('eventModal')).hide();
-            
-            document.getElementById('editEventId').value = currentEventId;
-            document.getElementById('editTitle').value = document.getElementById('eventModalTitle').innerText;
-            var oldContent = document.getElementById('eventModalContent').innerText;
-            document.getElementById('editContent').value = (oldContent === 'ไม่มีรายละเอียด') ? '' : oldContent;
-            document.getElementById('editDate').value = currentEventDate;
-            document.getElementById('editNewAttachments').value = ''; // ล้างช่องเลือกไฟล์ใหม่
-
-            // โชว์ไฟล์แนบเดิม พร้อมปุ่มลบทิ้ง
-            var editAttDiv = document.getElementById('editExistingAttachments');
-            editAttDiv.innerHTML = '';
-            if(currentAttachments.length > 0) {
-                currentAttachments.forEach(function(file) {
-                    var boxId = 'filebox_' + file.id;
-                    editAttDiv.innerHTML += `
-                        <div class="d-flex align-items-center justify-content-between p-2 mb-1 border rounded bg-light" id="${boxId}">
-                            <a href="${file.url}" target="_blank" class="text-truncate" style="max-width: 80%;">📎 แนบไว้แล้ว (เปิดดู)</a>
-                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteSingleFile(${file.id}, '${boxId}')">ลบออก</button>
-                        </div>
-                    `;
-                });
-            } else {
-                editAttDiv.innerHTML = '<span class="text-muted text-sm">ไม่มีไฟล์แนบเดิม</span>';
+        document.getElementById('btnDelete').onclick = function() {
+            if(confirm('ต้องการลบงานนี้ใช่หรือไม่?')) {
+                const fd = new FormData();
+                fd.append('id', currentId);
+                fetch('delete_event.php', {method:'POST', body:fd}).then(() => location.reload());
             }
-
-            new bootstrap.Modal(document.getElementById('editModal')).show();
-        });
-
-        // 3. กดบันทึกการแก้ไข
-        document.getElementById('btnSaveEdit').addEventListener('click', function() {
-            var formData = new FormData();
-            formData.append('id', document.getElementById('editEventId').value);
-            formData.append('title', document.getElementById('editTitle').value);
-            formData.append('content', document.getElementById('editContent').value);
-            formData.append('event_date', document.getElementById('editDate').value);
-
-            // ดึงไฟล์ใหม่ที่ถูกเลือก
-            var fileInput = document.getElementById('editNewAttachments');
-            for (var i = 0; i < fileInput.files.length; i++) {
-                formData.append('new_attachments[]', fileInput.files[i]);
-            }
-
-            fetch('update_event.php', { method: 'POST', body: formData })
-            .then(response => response.text())
-            .then(data => {
-                if (data.trim() === "success") {
-                    bootstrap.Modal.getInstance(document.getElementById('editModal')).hide();
-                    calendar.refetchEvents();
-                } else { alert('Error: ' + data); }
-            });
-        });
-
-        // เพิ่มการกด Enter ในช่องค้นหา
-        document.getElementById('searchInput').addEventListener('keypress', function (e) {
-            if (e.key === 'Enter') { searchEvents(); }
-        });
+        };
     });
     </script>
 </body>
